@@ -1,0 +1,1275 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Electric Field & Potential Visualizer</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Rajdhani:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #04080f;
+    --bg2: #080f1a;
+    --bg3: #0c1525;
+    --panel: #0d1a2e;
+    --panel2: #112035;
+    --border: #1a3050;
+    --border2: #1e3a60;
+    --accent: #00c8ff;
+    --accent2: #0090cc;
+    --pos: #ff4f6a;
+    --neg: #4fb8ff;
+    --green: #00e5a0;
+    --yellow: #ffd166;
+    --text: #c8dff0;
+    --text2: #7a9ab8;
+    --text3: #3d6080;
+    --mono: 'Space Mono', monospace;
+    --head: 'Rajdhani', sans-serif;
+  }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--head);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 20px;
+    background: var(--panel);
+    border-bottom: 1px solid var(--border);
+    z-index: 10;
+    flex-shrink: 0;
+  }
+
+  .logo {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .logo-icon {
+    width: 36px;
+    height: 36px;
+    position: relative;
+    display: flex; align-items: center; justify-content: center;
+  }
+
+  .logo-ring {
+    width: 36px; height: 36px;
+    border-radius: 50%;
+    border: 2px solid var(--accent);
+    position: absolute;
+    animation: spinRing 6s linear infinite;
+  }
+
+  .logo-ring::after {
+    content: '';
+    position: absolute;
+    top: -4px; left: 50%;
+    width: 6px; height: 6px;
+    background: var(--accent);
+    border-radius: 50%;
+    transform: translateX(-50%);
+  }
+
+  @keyframes spinRing { to { transform: rotate(360deg); } }
+
+  .logo-dot {
+    width: 10px; height: 10px;
+    background: var(--accent);
+    border-radius: 50%;
+    position: relative;
+    z-index: 1;
+    box-shadow: 0 0 8px var(--accent);
+  }
+
+  .logo-text h1 {
+    font-family: var(--head);
+    font-size: 18px;
+    font-weight: 700;
+    letter-spacing: 3px;
+    color: var(--accent);
+    text-transform: uppercase;
+    line-height: 1;
+  }
+
+  .logo-text p {
+    font-size: 10px;
+    letter-spacing: 2px;
+    color: var(--text2);
+    text-transform: uppercase;
+  }
+
+  .header-stats {
+    display: flex;
+    gap: 20px;
+    align-items: center;
+  }
+
+  .stat-badge {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--text2);
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    padding: 4px 10px;
+    border-radius: 3px;
+  }
+
+  .stat-badge span {
+    color: var(--accent);
+  }
+
+  .main {
+    display: flex;
+    flex: 1;
+    overflow: hidden;
+  }
+
+  .sidebar {
+    width: 260px;
+    background: var(--panel);
+    border-right: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    overflow-y: auto;
+    flex-shrink: 0;
+  }
+
+  .sidebar::-webkit-scrollbar { width: 4px; }
+  .sidebar::-webkit-scrollbar-track { background: var(--bg2); }
+  .sidebar::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
+
+  .section-head {
+    font-size: 10px;
+    letter-spacing: 3px;
+    color: var(--text3);
+    text-transform: uppercase;
+    padding: 14px 16px 6px;
+    border-bottom: 1px solid var(--border);
+    font-family: var(--mono);
+  }
+
+  .tool-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 6px;
+    padding: 10px;
+  }
+
+  .tool-btn {
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    color: var(--text2);
+    font-family: var(--head);
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 1px;
+    padding: 10px 6px;
+    border-radius: 4px;
+    cursor: pointer;
+    text-align: center;
+    transition: all 0.15s;
+    text-transform: uppercase;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+  }
+
+  .tool-btn .icon {
+    font-size: 18px;
+    line-height: 1;
+  }
+
+  .tool-btn:hover {
+    border-color: var(--accent2);
+    color: var(--accent);
+    background: var(--panel2);
+  }
+
+  .tool-btn.active {
+    border-color: var(--accent);
+    color: var(--accent);
+    background: rgba(0,200,255,0.08);
+    box-shadow: 0 0 12px rgba(0,200,255,0.15) inset;
+  }
+
+  .tool-btn.pos-active {
+    border-color: var(--pos);
+    color: var(--pos);
+    background: rgba(255,79,106,0.08);
+  }
+
+  .tool-btn.neg-active {
+    border-color: var(--neg);
+    color: var(--neg);
+    background: rgba(79,184,255,0.08);
+  }
+
+  .control-row {
+    padding: 8px 14px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    border-bottom: 1px solid rgba(26,48,80,0.4);
+  }
+
+  .control-row label {
+    font-size: 11px;
+    color: var(--text2);
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    flex: 1;
+    font-family: var(--mono);
+  }
+
+  .control-row .val {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--accent);
+    min-width: 36px;
+    text-align: right;
+  }
+
+  input[type=range] {
+    -webkit-appearance: none;
+    width: 80px;
+    height: 3px;
+    background: var(--border);
+    border-radius: 2px;
+    outline: none;
+  }
+
+  input[type=range]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 12px; height: 12px;
+    background: var(--accent);
+    border-radius: 50%;
+    cursor: pointer;
+  }
+
+  .toggle-row {
+    padding: 8px 14px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-bottom: 1px solid rgba(26,48,80,0.4);
+  }
+
+  .toggle-label {
+    font-size: 11px;
+    color: var(--text2);
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    font-family: var(--mono);
+  }
+
+  .toggle {
+    position: relative;
+    width: 34px;
+    height: 18px;
+  }
+
+  .toggle input { opacity: 0; width: 0; height: 0; }
+
+  .toggle-slider {
+    position: absolute; inset: 0;
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    cursor: pointer;
+    transition: 0.2s;
+  }
+
+  .toggle-slider::before {
+    content: '';
+    position: absolute;
+    width: 12px; height: 12px;
+    background: var(--text3);
+    border-radius: 50%;
+    top: 2px; left: 2px;
+    transition: 0.2s;
+  }
+
+  .toggle input:checked + .toggle-slider { background: rgba(0,200,255,0.15); border-color: var(--accent); }
+  .toggle input:checked + .toggle-slider::before { background: var(--accent); transform: translateX(16px); }
+
+  .charge-list {
+    flex: 1;
+    padding: 8px;
+  }
+
+  .charge-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 7px 8px;
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    margin-bottom: 5px;
+    font-family: var(--mono);
+    font-size: 11px;
+  }
+
+  .charge-dot {
+    width: 12px; height: 12px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+
+  .charge-info { flex: 1; color: var(--text2); }
+  .charge-info strong { display: block; color: var(--text); }
+
+  .charge-del {
+    background: none;
+    border: none;
+    color: var(--text3);
+    cursor: pointer;
+    font-size: 14px;
+    padding: 0 2px;
+    transition: color 0.15s;
+    line-height: 1;
+  }
+
+  .charge-del:hover { color: var(--pos); }
+
+  .action-btns {
+    padding: 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .btn {
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    color: var(--text2);
+    font-family: var(--head);
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 2px;
+    padding: 9px;
+    border-radius: 4px;
+    cursor: pointer;
+    text-transform: uppercase;
+    transition: all 0.15s;
+    text-align: center;
+  }
+
+  .btn:hover { border-color: var(--border2); color: var(--text); }
+  .btn.danger:hover { border-color: var(--pos); color: var(--pos); }
+
+  .btn.primary {
+    background: rgba(0,200,255,0.1);
+    border-color: var(--accent2);
+    color: var(--accent);
+  }
+  .btn.primary:hover { background: rgba(0,200,255,0.2); }
+
+  .canvas-area {
+    flex: 1;
+    position: relative;
+    background: var(--bg);
+    overflow: hidden;
+  }
+
+  #mainCanvas {
+    position: absolute;
+    top: 0; left: 0;
+    cursor: crosshair;
+  }
+
+  .canvas-overlay {
+    position: absolute;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    pointer-events: none;
+  }
+
+  .mode-indicator {
+    position: absolute;
+    top: 14px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: var(--panel);
+    border: 1px solid var(--border2);
+    border-radius: 4px;
+    padding: 5px 16px;
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 2px;
+    color: var(--accent);
+    text-transform: uppercase;
+    pointer-events: none;
+  }
+
+  .info-panel {
+    position: absolute;
+    bottom: 14px;
+    right: 14px;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 12px 14px;
+    font-family: var(--mono);
+    font-size: 11px;
+    min-width: 200px;
+    pointer-events: none;
+  }
+
+  .info-panel h3 {
+    font-size: 9px;
+    letter-spacing: 3px;
+    color: var(--text3);
+    text-transform: uppercase;
+    margin-bottom: 8px;
+  }
+
+  .info-row {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 4px;
+  }
+
+  .info-row .k { color: var(--text2); }
+  .info-row .v { color: var(--accent); }
+
+  .legend {
+    position: absolute;
+    bottom: 14px;
+    left: 14px;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 10px 14px;
+    font-family: var(--mono);
+    font-size: 10px;
+    pointer-events: none;
+  }
+
+  .legend h3 {
+    font-size: 9px;
+    letter-spacing: 3px;
+    color: var(--text3);
+    text-transform: uppercase;
+    margin-bottom: 8px;
+  }
+
+  .legend-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 5px;
+    color: var(--text2);
+  }
+
+  .legend-line {
+    width: 24px; height: 2px;
+    border-radius: 1px;
+  }
+
+  .legend-dot {
+    width: 10px; height: 10px;
+    border-radius: 50%;
+  }
+
+  .grid-ref {
+    position: absolute;
+    top: 14px;
+    right: 14px;
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--text3);
+    letter-spacing: 1px;
+    pointer-events: none;
+  }
+
+  .preset-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 5px;
+    padding: 8px 10px;
+  }
+
+  .preset-btn {
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    color: var(--text2);
+    font-family: var(--mono);
+    font-size: 9px;
+    letter-spacing: 0.5px;
+    padding: 7px 4px;
+    border-radius: 4px;
+    cursor: pointer;
+    text-align: center;
+    transition: all 0.15s;
+    text-transform: uppercase;
+  }
+
+  .preset-btn:hover {
+    border-color: var(--green);
+    color: var(--green);
+  }
+
+  .colorbar {
+    position: absolute;
+    top: 50%;
+    right: 14px;
+    transform: translateY(-50%);
+    width: 16px;
+    height: 200px;
+    border-radius: 3px;
+    overflow: hidden;
+    border: 1px solid var(--border);
+    pointer-events: none;
+  }
+
+  .colorbar canvas { width: 100%; height: 100%; }
+
+  .colorbar-labels {
+    position: absolute;
+    right: 38px;
+    top: 50%;
+    transform: translateY(-50%);
+    height: 200px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    font-family: var(--mono);
+    font-size: 9px;
+    color: var(--text3);
+    text-align: right;
+    pointer-events: none;
+  }
+
+  #tooltip {
+    position: absolute;
+    background: var(--panel);
+    border: 1px solid var(--border2);
+    border-radius: 4px;
+    padding: 6px 10px;
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--text);
+    pointer-events: none;
+    display: none;
+    z-index: 20;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">
+    <div class="logo-icon">
+      <div class="logo-ring"></div>
+      <div class="logo-dot"></div>
+    </div>
+    <div class="logo-text">
+      <h1>ElecViz</h1>
+      <p>Electric Field & Potential</p>
+    </div>
+  </div>
+  <div class="header-stats">
+    <div class="stat-badge">Charges: <span id="hChargeCount">0</span></div>
+    <div class="stat-badge">k = <span>8.99×10⁹</span> N·m²/C²</div>
+    <div class="stat-badge">Mode: <span id="hMode">PLACE +</span></div>
+  </div>
+</header>
+
+<div class="main">
+  <div class="sidebar">
+
+    <div class="section-head">// Tools</div>
+    <div class="tool-grid">
+      <button class="tool-btn pos-active" id="toolPos" onclick="setTool('pos')">
+        <span class="icon">⊕</span> Positive
+      </button>
+      <button class="tool-btn" id="toolNeg" onclick="setTool('neg')">
+        <span class="icon">⊖</span> Negative
+      </button>
+      <button class="tool-btn" id="toolProbe" onclick="setTool('probe')">
+        <span class="icon">✦</span> Probe
+      </button>
+      <button class="tool-btn" id="toolMove" onclick="setTool('move')">
+        <span class="icon">⊹</span> Move
+      </button>
+    </div>
+
+    <div class="section-head">// Presets</div>
+    <div class="preset-grid">
+      <button class="preset-btn" onclick="loadPreset('dipole')">Dipole</button>
+      <button class="preset-btn" onclick="loadPreset('quadrupole')">Quad</button>
+      <button class="preset-btn" onclick="loadPreset('parallel')">Parallel</button>
+      <button class="preset-btn" onclick="loadPreset('ring')">Ring</button>
+      <button class="preset-btn" onclick="loadPreset('line')">Line</button>
+      <button class="preset-btn" onclick="loadPreset('random')">Random</button>
+    </div>
+
+    <div class="section-head">// Display</div>
+    <div class="toggle-row">
+      <span class="toggle-label">Field Lines</span>
+      <label class="toggle"><input type="checkbox" id="togFieldLines" checked onchange="render()"><span class="toggle-slider"></span></label>
+    </div>
+    <div class="toggle-row">
+      <span class="toggle-label">Equipotential</span>
+      <label class="toggle"><input type="checkbox" id="togEquipotential" checked onchange="render()"><span class="toggle-slider"></span></label>
+    </div>
+    <div class="toggle-row">
+      <span class="toggle-label">Heatmap</span>
+      <label class="toggle"><input type="checkbox" id="togHeatmap" checked onchange="render()"><span class="toggle-slider"></span></label>
+    </div>
+    <div class="toggle-row">
+      <span class="toggle-label">Vectors</span>
+      <label class="toggle"><input type="checkbox" id="togVectors" onchange="render()"><span class="toggle-slider"></span></label>
+    </div>
+    <div class="toggle-row">
+      <span class="toggle-label">Grid</span>
+      <label class="toggle"><input type="checkbox" id="togGrid" onchange="render()"><span class="toggle-slider"></span></label>
+    </div>
+
+    <div class="section-head">// Parameters</div>
+    <div class="control-row">
+      <label>Charge Mag</label>
+      <input type="range" id="chargeMag" min="1" max="10" value="3" step="1" oninput="updateVal(this,'chargeMagVal')">
+      <span class="val" id="chargeMagVal">3</span>
+    </div>
+    <div class="control-row">
+      <label>Field Lines</label>
+      <input type="range" id="fieldLineCount" min="4" max="24" value="12" step="2" oninput="updateVal(this,'fieldLineCountVal');render()">
+      <span class="val" id="fieldLineCountVal">12</span>
+    </div>
+    <div class="control-row">
+      <label>Equi. Lines</label>
+      <input type="range" id="equipCount" min="3" max="20" value="10" step="1" oninput="updateVal(this,'equipCountVal');render()">
+      <span class="val" id="equipCountVal">10</span>
+    </div>
+    <div class="control-row">
+      <label>Vector Res</label>
+      <input type="range" id="vectorRes" min="20" max="80" value="40" step="10" oninput="updateVal(this,'vectorResVal');render()">
+      <span class="val" id="vectorResVal">40</span>
+    </div>
+
+    <div class="section-head">// Charges</div>
+    <div class="charge-list" id="chargeList">
+      <div style="color:var(--text3);font-family:var(--mono);font-size:10px;padding:8px;text-align:center;">No charges placed</div>
+    </div>
+
+    <div class="action-btns">
+      <button class="btn primary" onclick="render()">↺ Refresh</button>
+      <button class="btn" onclick="exportImg()">⬇ Export PNG</button>
+      <button class="btn danger" onclick="clearAll()">✕ Clear All</button>
+    </div>
+
+  </div>
+
+  <div class="canvas-area" id="canvasArea">
+    <canvas id="mainCanvas"></canvas>
+
+    <div class="mode-indicator" id="modeIndicator">Mode: Place Positive Charge</div>
+
+    <div class="grid-ref" id="gridRef">X: — &nbsp; Y: —</div>
+
+    <div class="legend">
+      <h3>// Legend</h3>
+      <div class="legend-row"><div class="legend-dot" style="background:var(--pos)"></div>Positive Charge</div>
+      <div class="legend-row"><div class="legend-dot" style="background:var(--neg)"></div>Negative Charge</div>
+      <div class="legend-row"><div class="legend-line" style="background:var(--accent)"></div>Field Lines</div>
+      <div class="legend-row"><div class="legend-line" style="background:var(--yellow)"></div>Equipotential</div>
+    </div>
+
+    <div class="info-panel" id="infoPanel">
+      <h3>// Field Data</h3>
+      <div class="info-row"><span class="k">Position</span><span class="v" id="ipPos">—</span></div>
+      <div class="info-row"><span class="k">|E| (N/C)</span><span class="v" id="ipE">—</span></div>
+      <div class="info-row"><span class="k">V (Volts)</span><span class="v" id="ipV">—</span></div>
+      <div class="info-row"><span class="k">E_x</span><span class="v" id="ipEx">—</span></div>
+      <div class="info-row"><span class="k">E_y</span><span class="v" id="ipEy">—</span></div>
+    </div>
+
+    <div id="tooltip"></div>
+  </div>
+</div>
+
+<script>
+const canvas = document.getElementById('mainCanvas');
+const ctx = canvas.getContext('2d');
+const area = document.getElementById('canvasArea');
+const k = 8.99e9;
+const scale = 50;
+
+let charges = [];
+let tool = 'pos';
+let dragging = null;
+let animFrame = null;
+let mouseX = 0, mouseY = 0;
+
+function resize() {
+  canvas.width = area.clientWidth;
+  canvas.height = area.clientHeight;
+  render();
+}
+
+function setTool(t) {
+  if (tool === 'probe' && t !== 'probe') clearProbe();
+  tool = t;
+  document.querySelectorAll('.tool-btn').forEach(b => b.classList.remove('active','pos-active','neg-active'));
+  const el = document.getElementById('tool' + t.charAt(0).toUpperCase() + t.slice(1));
+  if (el) {
+    if (t === 'pos') el.classList.add('pos-active');
+    else if (t === 'neg') el.classList.add('neg-active');
+    else el.classList.add('active');
+  }
+  const modes = { pos:'Place Positive Charge', neg:'Place Negative Charge', probe:'Probe Field', move:'Move Charge' };
+  document.getElementById('modeIndicator').textContent = 'Mode: ' + (modes[t] || t);
+  document.getElementById('hMode').textContent = t.toUpperCase();
+}
+
+function updateVal(el, outId) {
+  document.getElementById(outId).textContent = el.value;
+}
+
+function screenToWorld(sx, sy) {
+  return { x: (sx - canvas.width/2) / scale, y: -(sy - canvas.height/2) / scale };
+}
+
+function worldToScreen(wx, wy) {
+  return { x: wx * scale + canvas.width/2, y: -wy * scale + canvas.height/2 };
+}
+
+function electricField(x, y) {
+  let ex = 0, ey = 0;
+  for (const c of charges) {
+    const dx = x - c.x, dy = y - c.y;
+    const r2 = dx*dx + dy*dy;
+    if (r2 < 1e-4) continue;
+    const r = Math.sqrt(r2);
+    const mag = k * c.q / r2;
+    ex += mag * dx / r;
+    ey += mag * dy / r;
+  }
+  return { ex, ey };
+}
+
+function potential(x, y) {
+  let v = 0;
+  for (const c of charges) {
+    const dx = x - c.x, dy = y - c.y;
+    const r = Math.sqrt(dx*dx + dy*dy);
+    if (r < 0.01) continue;
+    v += k * c.q / r;
+  }
+  return v;
+}
+
+function render() {
+  if (charges.length === 0) {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    drawGrid();
+    drawEmptyHint();
+    return;
+  }
+
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  drawGrid();
+  if (document.getElementById('togHeatmap').checked) drawHeatmap();
+  if (document.getElementById('togEquipotential').checked) drawEquipotential();
+  if (document.getElementById('togFieldLines').checked) drawFieldLines();
+  if (document.getElementById('togVectors').checked) drawVectors();
+  drawCharges();
+}
+
+function drawGrid() {
+  if (!document.getElementById('togGrid').checked) return;
+  ctx.strokeStyle = 'rgba(26,48,80,0.5)';
+  ctx.lineWidth = 0.5;
+  const step = scale;
+  const ox = canvas.width/2 % step;
+  const oy = canvas.height/2 % step;
+  for (let x = ox; x < canvas.width; x += step) { ctx.beginPath(); ctx.moveTo(x,0); ctx.lineTo(x,canvas.height); ctx.stroke(); }
+  for (let y = oy; y < canvas.height; y += step) { ctx.beginPath(); ctx.moveTo(0,y); ctx.lineTo(canvas.width,y); ctx.stroke(); }
+  ctx.strokeStyle = 'rgba(0,200,255,0.15)';
+  ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.moveTo(canvas.width/2,0); ctx.lineTo(canvas.width/2,canvas.height); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(0,canvas.height/2); ctx.lineTo(canvas.width,canvas.height/2); ctx.stroke();
+}
+
+function drawEmptyHint() {
+  ctx.fillStyle = 'rgba(0,200,255,0.04)';
+  ctx.strokeStyle = 'rgba(0,200,255,0.08)';
+  ctx.lineWidth = 1;
+  ctx.setLineDash([4,4]);
+  ctx.beginPath();
+  ctx.arc(canvas.width/2, canvas.height/2, 80, 0, Math.PI*2);
+  ctx.stroke();
+  ctx.setLineDash([]);
+  ctx.fillStyle = 'rgba(0,200,255,0.3)';
+  ctx.font = '12px "Space Mono"';
+  ctx.textAlign = 'center';
+  ctx.fillText('Click canvas to place charges', canvas.width/2, canvas.height/2 + 110);
+  ctx.font = '10px "Space Mono"';
+  ctx.fillStyle = 'rgba(0,200,255,0.15)';
+  ctx.fillText('or use presets from sidebar', canvas.width/2, canvas.height/2 + 130);
+}
+
+function drawHeatmap() {
+  const W = canvas.width, H = canvas.height;
+  const res = 4;
+  const cols = Math.ceil(W/res), rows = Math.ceil(H/res);
+  const potentials = new Float32Array(cols * rows);
+  let vMin = Infinity, vMax = -Infinity;
+
+  for (let r = 0; r < rows; r++) {
+    for (let c = 0; c < cols; c++) {
+      const sx = c * res + res/2, sy = r * res + res/2;
+      const wp = screenToWorld(sx, sy);
+      const v = potential(wp.x, wp.y);
+      const clamped = Math.max(-1e10, Math.min(1e10, v));
+      potentials[r * cols + c] = clamped;
+      if (clamped < vMin) vMin = clamped;
+      if (clamped > vMax) vMax = clamped;
+    }
+  }
+
+  const span = Math.max(Math.abs(vMax), Math.abs(vMin)) || 1;
+  const imgData = ctx.createImageData(cols * res, rows * res);
+
+  for (let r = 0; r < rows; r++) {
+    for (let c = 0; c < cols; c++) {
+      const v = potentials[r * cols + c];
+      const t = Math.tanh(v / (span * 0.5));
+      let R, G, B;
+      if (t > 0) {
+        R = Math.round(255 * Math.min(1, t * 1.5));
+        G = Math.round(20 * (1 - t));
+        B = Math.round(20 * (1 - t));
+      } else {
+        R = Math.round(20 * (1 + t));
+        G = Math.round(20 * (1 + t));
+        B = Math.round(255 * Math.min(1, (-t) * 1.5));
+      }
+      const alpha = 120;
+      for (let dr = 0; dr < res; dr++) {
+        for (let dc = 0; dc < res; dc++) {
+          const px = ((r * res + dr) * cols * res + c * res + dc) * 4;
+          imgData.data[px] = R;
+          imgData.data[px+1] = G;
+          imgData.data[px+2] = B;
+          imgData.data[px+3] = alpha;
+        }
+      }
+    }
+  }
+  ctx.putImageData(imgData, 0, 0);
+}
+
+function drawEquipotential() {
+  const W = canvas.width, H = canvas.height;
+  const count = parseInt(document.getElementById('equipCount').value);
+  const res = 6;
+  const cols = Math.ceil(W/res) + 1;
+  const rows = Math.ceil(H/res) + 1;
+
+  const gridV = [];
+  let vMin = Infinity, vMax = -Infinity;
+
+  for (let r = 0; r < rows; r++) {
+    gridV[r] = [];
+    for (let c = 0; c < cols; c++) {
+      const sx = c * res, sy = r * res;
+      const wp = screenToWorld(sx, sy);
+      const v = Math.max(-1e10, Math.min(1e10, potential(wp.x, wp.y)));
+      gridV[r][c] = v;
+      if (v < vMin) vMin = v;
+      if (v > vMax) vMax = v;
+    }
+  }
+
+  const span = Math.max(Math.abs(vMax), Math.abs(vMin));
+  const levels = [];
+  for (let i = 1; i <= count; i++) {
+    levels.push(-span + (2 * span * i) / (count + 1));
+  }
+
+  ctx.lineWidth = 1;
+  for (const level of levels) {
+    const t = level / (span || 1);
+    const r = t > 0 ? Math.round(255 * t) : 0;
+    const b = t < 0 ? Math.round(255 * (-t)) : 0;
+    const g = Math.round(180 * (1 - Math.abs(t)));
+    ctx.strokeStyle = `rgba(${r+100},${g+100},${b+100},0.55)`;
+    ctx.beginPath();
+    for (let row = 0; row < rows - 1; row++) {
+      for (let col = 0; col < cols - 1; col++) {
+        marchingSquaresLine(ctx, gridV, row, col, res, level);
+      }
+    }
+    ctx.stroke();
+  }
+}
+
+function marchingSquaresLine(ctx, grid, r, c, res, level) {
+  const v00 = grid[r][c], v10 = grid[r][c+1];
+  const v01 = grid[r+1][c], v11 = grid[r+1][c+1];
+  const code = (v00 > level ? 8 : 0) | (v10 > level ? 4 : 0) | (v11 > level ? 2 : 0) | (v01 > level ? 1 : 0);
+  if (code === 0 || code === 15) return;
+
+  const lerp = (a, b, va, vb) => (level - va) / (vb - va) * (b - a) + a;
+  const x0 = c * res, y0 = r * res, x1 = (c+1)*res, y1 = (r+1)*res;
+
+  const edges = {
+    top: [lerp(x0, x1, v00, v10), y0],
+    right: [x1, lerp(y0, y1, v10, v11)],
+    bottom: [lerp(x0, x1, v01, v11), y1],
+    left: [x0, lerp(y0, y1, v00, v01)],
+  };
+
+  const segments = {
+    1: ['left','bottom'], 2: ['bottom','right'], 3: ['left','right'],
+    4: ['right','top'], 5: ['left','top','right','bottom'], 6: ['bottom','top'],
+    7: ['left','top'], 8: ['top','left'], 9: ['bottom','top'], 10: ['right','bottom','top','left'],
+    11: ['top','right'], 12: ['right','left'], 13: ['bottom','right'], 14: ['left','bottom'],
+  };
+
+  const seg = segments[code];
+  if (!seg) return;
+  for (let i = 0; i < seg.length; i += 2) {
+    const [ax, ay] = edges[seg[i]];
+    const [bx, by] = edges[seg[i+1]];
+    ctx.moveTo(ax, ay);
+    ctx.lineTo(bx, by);
+  }
+}
+
+function drawFieldLines() {
+  const numLines = parseInt(document.getElementById('fieldLineCount').value);
+  const stepSize = 3;
+  const maxSteps = 800;
+
+  for (const c of charges) {
+    if (c.q <= 0) continue;
+    const sp = worldToScreen(c.x, c.y);
+    for (let i = 0; i < numLines; i++) {
+      const angle = (2 * Math.PI * i) / numLines;
+      traceFieldLine(sp.x + 15 * Math.cos(angle), sp.y + 15 * Math.sin(angle), 1, stepSize, maxSteps);
+    }
+  }
+
+  for (const c of charges) {
+    if (charges.some(cc => cc.q > 0) || c.q >= 0) continue;
+    const sp = worldToScreen(c.x, c.y);
+    for (let i = 0; i < numLines; i++) {
+      const angle = (2 * Math.PI * i) / numLines;
+      traceFieldLine(sp.x + 15 * Math.cos(angle), sp.y + 15 * Math.sin(angle), -1, stepSize, maxSteps);
+    }
+  }
+
+  const posCharges = charges.filter(c => c.q > 0);
+  const negCharges = charges.filter(c => c.q < 0);
+  if (posCharges.length === 0 && negCharges.length > 0) {
+    for (const c of negCharges) {
+      const sp = worldToScreen(c.x, c.y);
+      for (let i = 0; i < numLines; i++) {
+        const angle = (2 * Math.PI * i) / numLines;
+        traceFieldLine(sp.x + 15 * Math.cos(angle), sp.y + 15 * Math.sin(angle), -1, stepSize, maxSteps);
+      }
+    }
+  }
+}
+
+function traceFieldLine(startX, startY, dir, step, maxSteps) {
+  let sx = startX, sy = startY;
+  const path = [[sx, sy]];
+  const W = canvas.width, H = canvas.height;
+
+  for (let i = 0; i < maxSteps; i++) {
+    const wp = screenToWorld(sx, sy);
+    const { ex, ey } = electricField(wp.x, wp.y);
+    const mag = Math.sqrt(ex*ex + ey*ey);
+    if (mag < 1e-8) break;
+    const nx = dir * ex / mag * step;
+    const ny = dir * ey / mag * step;
+    sx += nx;
+    sy -= ny;
+
+    if (sx < -10 || sx > W+10 || sy < -10 || sy > H+10) break;
+
+    let hitCharge = false;
+    for (const c of charges) {
+      const sp = worldToScreen(c.x, c.y);
+      const d = Math.hypot(sx - sp.x, sy - sp.y);
+      if (d < 12) { hitCharge = true; break; }
+    }
+    if (hitCharge) break;
+    path.push([sx, sy]);
+  }
+
+  if (path.length < 3) return;
+
+  ctx.beginPath();
+  ctx.moveTo(path[0][0], path[0][1]);
+  for (let i = 1; i < path.length; i++) ctx.lineTo(path[i][0], path[i][1]);
+
+  const grad = ctx.createLinearGradient(path[0][0], path[0][1], path[path.length-1][0], path[path.length-1][1]);
+  grad.addColorStop(0, 'rgba(0,200,255,0.9)');
+  grad.addColorStop(0.5, 'rgba(0,200,255,0.5)');
+  grad.addColorStop(1, 'rgba(0,200,255,0.1)');
+  ctx.strokeStyle = grad;
+  ctx.lineWidth = 1.2;
+  ctx.stroke();
+
+  const mid = Math.floor(path.length * 0.4);
+  if (mid < path.length - 1) {
+    const px = path[mid][0], py = path[mid][1];
+    const dx = path[mid+1][0] - path[mid-1][0], dy = path[mid+1][1] - path[mid-1][1];
+    const angle = Math.atan2(dy, dx);
+    drawArrowHead(ctx, px, py, angle, 'rgba(0,200,255,0.8)');
+  }
+}
+
+function drawArrowHead(ctx, x, y, angle, color) {
+  const len = 7, spread = 0.4;
+  ctx.fillStyle = color;
+  ctx.beginPath();
+  ctx.moveTo(x + Math.cos(angle) * len, y + Math.sin(angle) * len);
+  ctx.lineTo(x + Math.cos(angle + Math.PI - spread) * len, y + Math.sin(angle + Math.PI - spread) * len);
+  ctx.lineTo(x + Math.cos(angle + Math.PI + spread) * len, y + Math.sin(angle + Math.PI + spread) * len);
+  ctx.closePath();
+  ctx.fill();
+}
+
+function drawVectors() {
+  const res = parseInt(document.getElementById('vectorRes').value);
+  for (let sx = res/2; sx < canvas.width; sx += res) {
+    for (let sy = res/2; sy < canvas.height; sy += res) {
+      const wp = screenToWorld(sx, sy);
+      const { ex, ey } = electricField(wp.x, wp.y);
+      const mag = Math.sqrt(ex*ex + ey*ey);
+      if (mag < 1e-8) continue;
+
+      const logMag = Math.log10(1 + mag * 1e-6);
+      const len = Math.min(res * 0.45, logMag * 8);
+      const nx = ex / mag, ny = ey / mag;
+      const alpha = Math.min(0.8, logMag * 0.4 + 0.2);
+
+      ctx.strokeStyle = `rgba(0,229,160,${alpha})`;
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(sx - nx * len * 0.4, sy + ny * len * 0.4);
+      ctx.lineTo(sx + nx * len * 0.6, sy - ny * len * 0.6);
+      ctx.stroke();
+      drawArrowHead(ctx, sx + nx * len * 0.6, sy - ny * len * 0.6, Math.atan2(-ny, nx), `rgba(0,229,160,${alpha})`);
+    }
+  }
+}
+
+function drawCharges() {
+  for (const c of charges) {
+    const sp = worldToScreen(c.x, c.y);
+    const isPos = c.q > 0;
+    const color = isPos ? '#ff4f6a' : '#4fb8ff';
+    const radius = 14 + Math.abs(c.q) * 1.5;
+
+    ctx.shadowBlur = 20;
+    ctx.shadowColor = color;
+    ctx.beginPath();
+    ctx.arc(sp.x, sp.y, radius, 0, Math.PI * 2);
+    ctx.fillStyle = isPos ? 'rgba(255,79,106,0.18)' : 'rgba(79,184,255,0.18)';
+    ctx.fill();
+    ctx.strokeStyle = color;
+    ctx.lineWidth = 2;
+    ctx.stroke();
+    ctx.shadowBlur = 0;
+
+    ctx.fillStyle = '#fff';
+    ctx.font = 'bold 16px "Space Mono"';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(isPos ? '+' : '−', sp.x, sp.y);
+
+    ctx.fillStyle = 'rgba(255,255,255,0.5)';
+    ctx.font = '9px "Space Mono"';
+    ctx.fillText(Math.abs(c.q) + 'μC', sp.x, sp.y + radius + 10);
+  }
+}
+
+function addCharge(sx, sy, sign) {
+  const wp = screenToWorld(sx, sy);
+  const mag = parseInt(document.getElementById('chargeMag').value);
+  const q = sign * mag * 1e-6;
+  charges.push({ x: wp.x, y: wp.y, q });
+  updateChargeList();
+  render();
+}
+
+function updateChargeList() {
+  document.getElementById('hChargeCount').textContent = charges.length;
+  const list = document.getElementById('chargeList');
+  if (charges.length === 0) {
+    list.innerHTML = '<div style="color:var(--text3);font-family:var(--mono);font-size:10px;padding:8px;text-align:center;">No charges placed</div>';
+    return;
+  }
+  list.innerHTML = charges.map((c, i) => {
+    const isPos = c.q > 0;
+    const col = isPos ? 'var(--pos)' : 'var(--neg)';
+    return `<div class="charge-item">
+      <div class="charge-dot" style="background:${col}"></div>
+      <div class="charge-info">
+        <strong>${isPos ? '+' : ''}${(c.q * 1e6).toFixed(0)}μC</strong>
+        (${c.x.toFixed(1)}, ${c.y.toFixed(1)})
+      </div>
+      <button class="charge-del" onclick="removeCharge(${i})">✕</button>
+    </div>`;
+  }).join('');
+}
+
+function removeCharge(i) {
+  charges.splice(i, 1);
+  updateChargeList();
+  render();
+}
+
+function clearAll() {
+  charges = [];
+  updateChargeList();
+  render();
+  clearProbe();
+}
+
+function loadPreset(name) {
+  charges = [];
+  const presets = {
+    dipole: [{ x: -2, y: 0, q: 3e-6 }, { x: 2, y: 0, q: -3e-6 }],
+    quadrupole: [
+      { x: -2, y: -2, q: 3e-6 }, { x: 2, y: -2, q: -3e-6 },
+      { x: -2, y: 2, q: -3e-6 }, { x: 2, y: 2, q: 3e-6 },
+    ],
+    parallel: [
+      { x: -3, y: 3, q: 4e-6 }, { x: -3, y: 1, q: 4e-6 }, { x: -3, y: -1, q: 4e-6 }, { x: -3, y: -3, q: 4e-6 },
+      { x: 3, y: 3, q: -4e-6 }, { x: 3, y: 1, q: -4e-6 }, { x: 3, y: -1, q: -4e-6 }, { x: 3, y: -3, q: -4e-6 },
+    ],
+    ring: (() => {
+      const arr = [];
+      for (let i = 0; i < 8; i++) {
+        const a = (2 * Math.PI * i) / 8;
+        arr.push({ x: 3 * Math.cos(a), y: 3 * Math.sin(a), q: 3e-6 });
+      }
+      return arr;
+    })(),
+    line: [
+      { x: -4, y: 0, q: 3e-6 }, { x: -2, y: 0, q: 3e-6 }, { x: 0, y: 0, q: 3e-6 },
+      { x: 2, y: 0, q: 3e-6 }, { x: 4, y: 0, q: 3e-6 },
+    ],
+    random: (() => {
+      const arr = [];
+      for (let i = 0; i < 6; i++) {
+        arr.push({
+          x: (Math.random() - 0.5) * 10,
+          y: (Math.random() - 0.5) * 7,
+          q: (Math.random() > 0.5 ? 1 : -1) * (2 + Math.random() * 4) * 1e-6,
+        });
+      }
+      return arr;
+    })(),
+  };
+  charges = presets[name] || [];
+  updateChargeList();
+  render();
+}
+
+function exportImg() {
+  const link = document.createElement('a');
+  link.download = 'electric_field.png';
+  link.href = canvas.toDataURL();
+  link.click();
+}
+
+function updateProbe(sx, sy) {
+  const wp = screenToWorld(sx, sy);
+  const { ex, ey } = electricField(wp.x, wp.y);
+  const mag = Math.sqrt(ex*ex + ey*ey);
+  const v = potential(wp.x, wp.y);
+
+  document.getElementById('ipPos').textContent = `(${wp.x.toFixed(2)}, ${wp.y.toFixed(2)})`;
+  document.getElementById('ipE').textContent = mag.toExponential(2);
+  document.getElementById('ipV').textContent = v.toExponential(2);
+  document.getElementById('ipEx').textContent = ex.toExponential(2);
+  document.getElementById('ipEy').textContent = ey.toExponential(2);
+  document.getElementById('gridRef').innerHTML = `X: ${wp.x.toFixed(2)} &nbsp; Y: ${wp.y.toFixed(2)}`;
+}
+
+function clearProbe() {
+  document.getElementById('ipPos').textContent = '—';
+  document.getElementById('ipE').textContent = '—';
+  document.getElementById('ipV').textContent = '—';
+  document.getElementById('ipEx').textContent = '—';
+  document.getElementById('ipEy').textContent = '—';
+  document.getElementById('gridRef').innerHTML = 'X: — &nbsp; Y: —';
+}
+
+canvas.addEventListener('click', e => {
+  const rect = canvas.getBoundingClientRect();
+  const sx = e.clientX - rect.left, sy = e.clientY - rect.top;
+  if (tool === 'pos') addCharge(sx, sy, 1);
+  else if (tool === 'neg') addCharge(sx, sy, -1);
+  else if (tool === 'move') {}
+});
+
+canvas.addEventListener('mousemove', e => {
+  const rect = canvas.getBoundingClientRect();
+  const sx = e.clientX - rect.left, sy = e.clientY - rect.top;
+  mouseX = sx; mouseY = sy;
+  if (tool === 'probe') {
+    if (charges.length > 0) updateProbe(sx, sy);
+    else {
+      const wp0 = screenToWorld(sx, sy);
+      document.getElementById('gridRef').innerHTML = `X: ${wp0.x.toFixed(2)} &nbsp; Y: ${wp0.y.toFixed(2)}`;
+    }
+  }
+
+  if (dragging !== null) {
+    const wp2 = screenToWorld(sx, sy);
+    charges[dragging].x = wp2.x;
+    charges[dragging].y = wp2.y;
+    updateChargeList();
+    render();
+  }
+});
+
+canvas.addEventListener('mousedown', e => {
+  if (tool !== 'move') return;
+  const rect = canvas.getBoundingClientRect();
+  const sx = e.clientX - rect.left, sy = e.clientY - rect.top;
+  for (let i = 0; i < charges.length; i++) {
+    const sp = worldToScreen(charges[i].x, charges[i].y);
+    if (Math.hypot(sx - sp.x, sy - sp.y) < 20) {
+      dragging = i;
+      break;
+    }
+  }
+});
+
+canvas.addEventListener('mouseup', () => { if (dragging !== null) { dragging = null; render(); } });
+canvas.addEventListener('mouseleave', () => {
+  if (dragging !== null) { dragging = null; }
+  clearProbe();
+});
+
+window.addEventListener('resize', resize);
+setTool('pos');
+resize();
+</script>
+</body>
+</html>
